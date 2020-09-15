@@ -7,9 +7,6 @@ metadata:
   annotations:
     description: |-
       Database deployment resource for NuoDB Storage Engines (SM).
-    {{- if .Values.database.podAnnotations }}
-{{ toYaml .Values.database.podAnnotations | trim | indent 4}}
-    {{- end }}
   labels:
     app: {{ template "database.fullname" . }}
     group: nuodb
@@ -38,6 +35,10 @@ spec:
         domain: {{ .Values.admin.domain }}
         chart: {{ template "database.chart" . }}
         release: {{ .Release.Name | quote }}
+      {{- if .Values.database.podAnnotations }}
+      annotations:
+{{ toYaml .Values.database.podAnnotations | trim | indent 8}}
+      {{- end }}
     spec:
       serviceAccountName: {{ default "nuodb" .Values.nuodb.serviceAccount }}
       terminationGracePeriodSeconds: 15
@@ -74,26 +75,7 @@ spec:
         imagePullPolicy: {{ .Values.nuodb.image.pullPolicy }}
     {{- include "database.capabilities" . | indent 8 }}
         args: 
-          - "nuosm"
-          - "--servers-ready-timeout"
-          - "300"
-    {{- if .Values.database.isRestore }}
-          - "--restored"
-    {{- end }}
-          - "--options"
-          - "mem {{ .Values.database.sm.resources.requests.memory}} {{ include "opt.key-values" .Values.database.sm.engineOptions }}"
-    {{- with .Values.database.sm.labels }}      
-          - "--labels"
-          - "{{- include "opt.key-values" . }}"
-    {{- end }}
-    {{- with .Values.database.options }}
-          - "--database-options"
-          - "{{- include "opt.key-values" . }}"
-    {{- end }}
-{{- range $opt, $val := .Values.database.sm.otherOptions }}
-          - "--{{$opt}}"
-          - "{{$val}}"
-{{- end}}
+{{- include "database.sm.startArgs" . | indent 10 }}
     {{- include "database.envFrom" . | indent 8 }}
         env:
         - name: NODE_NAME
@@ -190,6 +172,13 @@ spec:
           mountPath: /etc/nuodb/keys/nuoadmin.p12
           subPath: {{ .Values.admin.tlsKeyStore.key }}
         {{- end }}
+        {{- with .Values.database.startupFiles }}
+        {{- range $key, $val := . }}
+        - name: startup
+          mountPath: {{ $.Values.database.startupFilesPath }}{{ $key }}
+          subPath: {{ $key }}
+        {{- end -}}
+        {{- end }}
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
         readinessProbe:
@@ -242,6 +231,12 @@ spec:
           secretName: {{ .Values.admin.tlsKeyStore.secret }}
           defaultMode: 0440
       {{- end }}
+      {{- if .Values.database.startupFiles }}
+      - name: startup
+        configMap:
+          name: {{ template "database.fullname" . }}-startup
+          defaultMode: 0777
+      {{- end }}      
   volumeClaimTemplates:
   - metadata:
       name: archive-volume
@@ -308,9 +303,6 @@ metadata:
   annotations:
     description: |-
       Database deployment resource for NuoDB Storage Engines (SM).
-    {{- if .Values.database.podAnnotations }}
-{{ toYaml .Values.database.podAnnotations | trim | indent 4}}
-    {{- end }}
   labels:
     app: {{ template "database.fullname" . }}
     group: nuodb
@@ -339,6 +331,10 @@ spec:
         domain: {{ .Values.admin.domain }}
         chart: {{ template "database.chart" . }}
         release: {{ .Release.Name | quote }}
+      {{- if .Values.database.podAnnotations }}
+      annotations:
+{{ toYaml .Values.database.podAnnotations | trim | indent 8}}
+      {{- end }}
     spec:
       serviceAccountName: {{ default "nuodb" .Values.nuodb.serviceAccount }}
       terminationGracePeriodSeconds: 15
@@ -377,21 +373,7 @@ spec:
         imagePullPolicy: {{ .Values.nuodb.image.pullPolicy }}
     {{- include "database.capabilities" . | indent 8 }}
         args:
-          - "nuosm"
-          - "--servers-ready-timeout"
-          - "300"
-          - "--options"
-          - "mem {{ .Values.database.sm.resources.requests.memory}} {{- if and (eq (include "defaulttrue" .Values.database.sm.hotCopy.enableBackups) "true") .Values.database.sm.hotCopy.journalBackup.enabled }} journal-hot-copy enable {{- end }} {{- include "opt.key-values" .Values.database.sm.engineOptions}}"
-          - "--labels"
-          - "backup {{ include "hotcopy.group" . }} {{- include "opt.key-values" .Values.database.sm.labels }}"
-{{- with .Values.database.options}}
-          - "--database-options"
-          - "{{- range $opt, $val := . -}} {{$opt}} {{$val}} {{ end}}"
-{{- end}}
-{{- range $opt, $val := .Values.database.sm.otherOptions }}
-          - "--{{$opt}}"
-          - "{{$val}}"
-{{- end}}
+{{- include "database.sm.startArgs" . | indent 10 }}
     {{- include "database.envFrom" . | indent 8 }}
         env:
         - name: NODE_NAME
@@ -496,6 +478,13 @@ spec:
           mountPath: /etc/nuodb/keys/nuoadmin.p12
           subPath: {{ .Values.admin.tlsKeyStore.key }}
         {{- end }}
+        {{- with .Values.database.startupFiles }}
+        {{- range $key, $val := . }}
+        - name: startup
+          mountPath: {{ $.Values.database.startupFilesPath }}{{ $key }}
+          subPath: {{ $key }}
+        {{- end -}}
+        {{- end }}
         terminationMessagePath: /dev/termination-log
         terminationMessagePolicy: File
         readinessProbe:
@@ -547,6 +536,12 @@ spec:
         secret:
           secretName: {{ .Values.admin.tlsKeyStore.secret }}
           defaultMode: 0440
+      {{- end }}
+      {{- if .Values.database.startupFiles }}
+      - name: startup
+        configMap:
+          name: {{ template "database.fullname" . }}-startup
+          defaultMode: 0777
       {{- end }}
   volumeClaimTemplates:
   - metadata:

@@ -5,9 +5,6 @@ metadata:
     description: |-
       Database deployment resource for NuoDB Transaction Engines (TE).
 {{- include "database.loadBalancerConfig" . | indent 4 }}
-    {{- if .Values.database.podAnnotations }}
-{{ toYaml .Values.database.podAnnotations | trim | indent 4}}
-    {{- end }}
   labels:
     app: {{ template "database.fullname" . }}
     group: nuodb
@@ -34,6 +31,10 @@ spec:
         component: te
         chart: {{ template "database.chart" . }}
         release: {{ .Release.Name | quote }}
+      {{- if .Values.database.podAnnotations }}
+      annotations:
+{{ toYaml .Values.database.podAnnotations | trim | indent 8}}
+      {{- end }}
     spec:
       serviceAccountName: {{ default "nuodb" .Values.nuodb.serviceAccount }}
       {{- with .Values.database.te.nodeSelector }}
@@ -54,21 +55,7 @@ spec:
         imagePullPolicy: {{ .Values.nuodb.image.pullPolicy }}
     {{- include "database.capabilities" . | indent 8 }}
         args:
-          - "nuote"
-          - "--database-created-timeout"
-          - "300"
-          - "--servers-ready-timeout"
-          - "300"
-          - "--options"
-          - "mem {{ .Values.database.te.resources.requests.memory}} {{- range $opt, $val := .Values.database.te.engineOptions }} {{$opt}} {{$val}} {{- end}}"
-        {{- with .Values.database.te.labels }}
-          - "--labels"
-          - "{{- range $opt, $val := . }} {{$opt}} {{$val}} {{- end}}"
-        {{- end }}
-{{- range $opt, $val := .Values.database.te.otherOptions }}
-          - "--{{$opt}}"
-          - "{{$val}}"
-{{- end}}
+{{- include "database.te.startArgs" . | indent 10 }}
     {{- include "database.envFrom" . | indent 8 }}
         env:
           - name: NODE_NAME
@@ -137,6 +124,13 @@ spec:
           mountPath: /etc/nuodb/keys/nuoadmin.p12
           subPath: {{ .Values.admin.tlsKeyStore.key }}
         {{- end }}
+        {{- with .Values.database.startupFiles }}
+        {{- range $key, $val := . }}
+        - name: startup
+          mountPath: {{ $.Values.database.startupFilesPath }}{{ $key }}
+          subPath: {{ $key }}
+        {{- end -}}
+        {{- end }}
         readinessProbe:
           initialDelaySeconds: 30
           periodSeconds: 5
@@ -185,6 +179,12 @@ spec:
           secret:
             secretName: {{ .Values.admin.tlsKeyStore.secret }}
             defaultMode: 0440
+        {{- end }}
+        {{- if .Values.database.startupFiles }}
+        - name: startup
+          configMap:
+            name: {{ template "database.fullname" . }}-startup
+            defaultMode: 0777
         {{- end }}
       dnsPolicy: ClusterFirst
       restartPolicy: Always

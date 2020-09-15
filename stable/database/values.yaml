@@ -155,6 +155,12 @@ database:
     # nuodb.config: |-
     #   verbose error,flush,warn
 
+  # Custom NuoDB startup files path
+  startupFilesPath: /etc/nuodb/
+
+  # Files containing code to execute before NuoDB starts to allow configuration of 3rd party tools
+  startupFiles: {}
+
   # Load balancer configuration per database
   lbConfig:
     prefilter: ""

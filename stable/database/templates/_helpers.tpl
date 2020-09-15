@@ -221,3 +221,63 @@ The configuration is imported only in the entrypoint cluster.
 {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Sets a modified command for SM container start up if specified.
+*/}}
+{{- define "database.sm.startArgs" -}}
+{{- if .Values.database.startupFiles }}
+- "/bin/sh"
+- "-c"
+-{{- range $key, $val := .Values.database.startupFiles }} {{ $.Values.database.startupFilesPath }}{{ $key }};{{- end -}}
+"nuosm" "--servers-ready-timeout" "300" "--options" "mem {{ .Values.database.sm.resources.requests.memory}} {{- if and (eq (include "defaulttrue" .Values.database.sm.hotCopy.enableBackups) "true") .Values.database.sm.hotCopy.journalBackup.enabled }} journal-hot-copy enable {{- end }} {{- include "opt.key-values" .Values.database.sm.engineOptions}}" "--labels" "backup {{ include "hotcopy.group" . }} {{- include "opt.key-values" .Values.database.sm.labels }}"
+{{- with .Values.database.options}} "--database-options" "{{- range $opt, $val := . -}} {{$opt}} {{$val}} {{ end}}" {{- end}}
+{{- range $opt, $val := .Values.database.sm.otherOptions }} "--{{$opt}}" "{{$val}}" {{- end}}
+{{- else }}
+- "nuosm"
+- "--servers-ready-timeout"
+- "300"
+- "--options"
+- "mem {{ .Values.database.sm.resources.requests.memory}} {{- if and (eq (include "defaulttrue" .Values.database.sm.hotCopy.enableBackups) "true") .Values.database.sm.hotCopy.journalBackup.enabled }} journal-hot-copy enable {{- end }} {{- include "opt.key-values" .Values.database.sm.engineOptions}}"
+- "--labels"
+- "backup {{ include "hotcopy.group" . }} {{- include "opt.key-values" .Values.database.sm.labels }}"
+{{- with .Values.database.options}}
+- "--database-options"
+- "{{- range $opt, $val := . -}} {{$opt}} {{$val}} {{ end}}"
+{{- end}}
+{{- range $opt, $val := .Values.database.sm.otherOptions }}
+- "--{{$opt}}"
+- "{{$val}}"
+{{- end}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Sets a modified command for TE container start up if specified.
+*/}}
+{{- define "database.te.startArgs" -}}
+{{- if .Values.database.startupFiles }}
+- /bin/sh
+- -c
+-{{- range $key, $val := .Values.database.startupFiles }} {{ $.Values.database.startupFilesPath }}{{ $key }};{{- end -}}
+"nuote" "--database-created-timeout" "300" "--servers-ready-timeout" "300" "--options" "mem {{ .Values.database.te.resources.requests.memory}} {{- range $opt, $val := .Values.database.te.engineOptions }} {{$opt}} {{$val}} {{- end}}"
+{{- with .Values.database.te.labels }} "--labels" "{{- range $opt, $val := . }} {{$opt}} {{$val}} {{- end}}" {{- end }}
+{{- range $opt, $val := .Values.database.te.otherOptions }} "--{{$opt}}" "{{$val}}" {{- end}}
+{{- else }}
+- "nuote"
+- "--database-created-timeout"
+- "300"
+- "--servers-ready-timeout"
+- "300"
+- "--options"
+- "mem {{ .Values.database.te.resources.requests.memory}} {{- range $opt, $val := .Values.database.te.engineOptions }} {{$opt}} {{$val}} {{- end}}"
+{{- with .Values.database.te.labels }}
+- "--labels"
+- "{{- range $opt, $val := . }} {{$opt}} {{$val}} {{- end}}"
+{{- end }}
+{{- range $opt, $val := .Values.database.te.otherOptions }}
+- "--{{$opt}}"
+- "{{$val}}"
+{{- end}}
+{{- end -}}
+{{- end -}}

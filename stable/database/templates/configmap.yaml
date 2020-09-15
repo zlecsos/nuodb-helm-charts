@@ -91,3 +91,21 @@ data:
 {{ $val | indent 4}}
 {{- end }}
 {{- end -}}
+{{- if .Values.database.startupFiles }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: {{ template "database.fullname" . }}
+    group: nuodb
+    domain: {{ .Values.admin.domain }}
+    chart: {{ template "database.chart" . }}
+    release: {{ .Release.Name | quote }}
+  name: {{ template "database.fullname" . }}-startup
+data:
+{{- range $key, $val := .Values.database.startupFiles }}
+  {{ $key }}: |-
+{{ $val | indent 4}}
+{{- end }}
+{{- end }}
