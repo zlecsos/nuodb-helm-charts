@@ -197,6 +197,12 @@ admin:
     # nuodb.lic: |-
     #   "PUT YOUR BASE64 ENCODED LICENSE CONTENT HERE"
 
+  # Custom NuoDB startup files path
+  startupFilesPath: /etc/nuodb/
+
+  # Files containing code to execute before NuoDB starts to allow configuration of 3rd party tools
+  startupFiles: {}
+
   # Recommended default admin affinity:
   # affinity: {}
   # nodeSelector: {}

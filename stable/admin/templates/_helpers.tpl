@@ -206,3 +206,22 @@ The configuration is imported only in the entrypoint cluster.
 {{- end -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Sets a modified command for container start up if specified.
+*/}}
+{{- define "admin.startArgs" -}}
+{{- if .Values.admin.startupFiles }}
+- /bin/sh
+- -c
+-{{- range $key, $val := .Values.admin.startupFiles }} {{ $.Values.admin.startupFilesPath }}{{ $key }};{{- end -}}
+nuoadmin --
+{{- range $opt, $val := .Values.admin.options }} {{ $opt }}={{ $val }} {{- end -}}
+{{- else }}
+- nuoadmin
+- --
+{{- range $opt, $val := .Values.admin.options}}
+- {{ $opt }}={{ $val }}
+{{- end}}
+{{- end -}}
+{{- end -}}
