@@ -37,3 +37,15 @@ iopsPerGB: {{ $iopsPerGB | quote }}
 iopsPerGB: "50"
 {{- end -}}
 {{- end -}}
+
+{{/*
+Amazon EBS type parameter.
+*/}}
+{{- define "storageClass.type" -}}
+{{- $type := (index $.Values.storageClass ( print .className )).type -}}
+{{- if $type -}}
+type: {{ $type }}
+{{- else -}}
+type: io1
+{{- end -}}
+{{- end -}}

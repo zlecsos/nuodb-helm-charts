@@ -43,13 +43,17 @@ func StorageClassTemplateE(t *testing.T, options *helm.Options, expectedProvisio
 			assert.NoError(t, err)
 			assert.EqualValues(t, b, *obj.AllowVolumeExpansion)
 
-			// Validate encrypted and iopsPerGB. Amazon-only!
+			// Validate type, encrypted and iopsPerGB. Amazon-only!
 			re := regexp.MustCompile("(\\w+)-storage")
 			values := re.FindStringSubmatch(obj.ObjectMeta.Name)
 			assert.Equal(t, 2, len(values))
 			class := values[1]
 			classes := []string{"fast", "manual"}
 			if Contains(classes, class) {
+				typKey := fmt.Sprintf("storageClass.%s.type", class)
+				if typ, ok := options.SetValues[typKey]; ok {
+					assert.EqualValues(t, typ, obj.Parameters["type"])
+				}
 				encKey := fmt.Sprintf("storageClass.%s.encrypted", class)
 				if enc, ok := options.SetValues[encKey]; ok {
 					assert.EqualValues(t, enc, obj.Parameters["encrypted"])
@@ -86,6 +90,8 @@ func TestStorageClassTemplateAws(t *testing.T) {
 			"storageClass.manual.encrypted": fmt.Sprintf("%t", rand.Int31n(2) != 0), // if we spin too fast!
 			"storageClass.fast.iopsPerGB":   "120",
 			"storageClass.manual.iopsPerGB": "120",
+			"storageClass.fast.type": "io1",
+			"storageClass.manual.type": "io2",
 		},
 	}
 

@@ -30,7 +30,7 @@ metadata:
 {{- if eq .Values.cloud.provider "amazon" }}
 provisioner: kubernetes.io/aws-ebs
 parameters:
-  type: io1
+{{ include "storageClass.type" (merge (dict "className" "fast") . ) | indent 2 }}
 {{ include "storageClass.encryptedFlag" (merge (dict "className" "fast") . ) | indent 2 }}
 {{ include "storageClass.iopsPerGB" (merge (dict "className" "fast") . ) | indent 2 }}
   fsType: ext4
@@ -55,7 +55,7 @@ metadata:
 {{- if eq .Values.cloud.provider "amazon" }}
 provisioner: kubernetes.io/aws-ebs
 parameters:
-  type: io1
+{{ include "storageClass.type" (merge (dict "className" "manual") . ) | indent 2 }}
 {{ include "storageClass.encryptedFlag" (merge (dict "className" "manual") . ) | indent 2 }}
 {{ include "storageClass.iopsPerGB" (merge (dict "className" "manual") . ) | indent 2 }}
   fsType: ext4

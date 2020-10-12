@@ -36,14 +36,22 @@ storageClass:
     # Amazon EBS only.
     # encrypted: "true"
 
+    # Amazon EBS only.
+    # type: io1
+
     # A string is expected here, i.e. "10", not 10. Default is "50".
     # Amazon EBS only.
     # iopsPerGB: "50"
+
   manual: {}
     # A string is expected here, i.e. "true", not true. Default is "true".
     # Note: The default in the EBS provisioner is "false".
     # Amazon EBS only.
     # encrypted: "true"
+
+    # A string is expected here, i.e. "io1", not io1. Default is "io1".
+    # Amazon EBS only.
+    # type: "io1"
 
     # A string is expected here, i.e. "10", not 10. Default is "50".
     # Amazon EBS only.
